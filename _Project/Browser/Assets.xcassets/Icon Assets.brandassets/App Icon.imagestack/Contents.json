@@ -1,0 +1,20 @@
+{
+  "info" : {
+    "author" : "xcode",
+    "version" : 1
+  },
+  "layers" : [
+    {
+      "filename" : "Glyph.imagestacklayer"
+    },
+    {
+      "filename" : "Front-1.imagestacklayer"
+    },
+    {
+      "filename" : "Middle-1.imagestacklayer"
+    },
+    {
+      "filename" : "Back-1.imagestacklayer"
+    }
+  ]
+}
