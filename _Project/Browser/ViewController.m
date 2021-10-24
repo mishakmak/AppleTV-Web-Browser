@@ -14,11 +14,7 @@
 #pragma mark - UI
 
 static UIColor *kTextColor() {
-    if (@available(tvOS 13, *)) {
-        return UIColor.labelColor;
-    } else {
-        return UIColor.blackColor;
-    }
+    return UIColor.labelColor;
 }
 
 static UIImage *kDefaultCursor() {
@@ -35,6 +31,15 @@ static UIImage *kPointerCursor() {
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
         image = [UIImage imageNamed:@"Pointer"];
+    });
+    return image;
+}
+
+static UIImage *kScrollerCursor() {
+    static UIImage *image;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        image = [UIImage imageNamed:@"Scroller"];
     });
     return image;
 }
@@ -61,7 +66,6 @@ static UIImage *kPointerCursor() {
 @synthesize textFontSize = _textFontSize;
 -(void)viewDidAppear:(BOOL)animated {
     [super viewDidAppear:animated];
-    //loadingSpinner.center = CGPointMake(CGRectGetMidX([UIScreen mainScreen].bounds), CGRectGetMidY([UIScreen mainScreen].bounds));
     [self webViewDidAppear];
     _displayedHintsOnLaunch = YES;
 }
@@ -72,7 +76,6 @@ static UIImage *kPointerCursor() {
         [[NSUserDefaults standardUserDefaults] synchronize];
     }
     else if ([self.webview request] == nil) {
-        //[self requestURLorSearchInput];
         [self loadHomePage];
     }
     if (![[NSUserDefaults standardUserDefaults] boolForKey:@"DontShowHintsOnLaunch"] && !_displayedHintsOnLaunch) {
@@ -80,24 +83,14 @@ static UIImage *kPointerCursor() {
     }
 }
 -(void)loadHomePage {
-    if ([[NSUserDefaults standardUserDefaults] stringForKey:@"homepage"] != nil) {
-        [self.webview loadRequest:[NSURLRequest requestWithURL:[NSURL URLWithString:[[NSUserDefaults standardUserDefaults] stringForKey:@"homepage"]]]];
-    }
-    else {
-        [self.webview loadRequest:[NSURLRequest requestWithURL:[NSURL URLWithString: @"http://www.google.com"]]];
-    }
+    [self.webview loadRequest:[NSURLRequest requestWithURL:[NSURL URLWithString:[[NSUserDefaults standardUserDefaults] stringForKey:@"homepage"]]]];
 }
 -(void)initWebView {
-    if (@available(tvOS 11.0, *)) {
-        self.additionalSafeAreaInsets = UIEdgeInsetsZero;
-    }
+    self.additionalSafeAreaInsets = UIEdgeInsetsZero;
     self.webview = [[NSClassFromString(@"UIWebView") alloc] init];
     [self.webview setTranslatesAutoresizingMaskIntoConstraints:false];
     [self.webview setClipsToBounds:false];
     
-    //[self.webview loadRequest:[NSURLRequest requestWithURL:[NSURL URLWithString:@"http://www.google.com"]]];
-    
-    //[self.view addSubview: self.webview];
     [self.browserContainerView addSubview: self.webview];
 
     [self.webview setFrame:self.view.bounds];
@@ -105,16 +98,11 @@ static UIImage *kPointerCursor() {
     [self.webview setLayoutMargins:UIEdgeInsetsZero];
     UIScrollView *scrollView = [self.webview scrollView];
     [scrollView setLayoutMargins:UIEdgeInsetsZero];
-    if (@available(tvOS 11.0, *)) {
-        scrollView.contentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentNever;
-    } else {
-        self.automaticallyAdjustsScrollViewInsets = NO;
-    }
+    scrollView.contentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentNever;
     
     NSNumber *showTopNavBar = [[NSUserDefaults standardUserDefaults] objectForKey:@"ShowTopNavigationBar"];
     self.topMenuView.hidden = !(showTopNavBar ? showTopNavBar.boolValue : YES);
     [self updateTopNavAndWebView];
-    //scrollView.contentOffset = CGPointMake(0, topHeight);
     scrollView.contentOffset = CGPointZero;
     
     scrollView.contentInset = UIEdgeInsetsZero;
@@ -152,21 +140,8 @@ static UIImage *kPointerCursor() {
     self.cursorView.image = kDefaultCursor();
     [self.view addSubview:self.cursorView];
     
-    
-    
-    // Spinner now also in Storyboard.
-    /*loadingSpinner = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleWhiteLarge];
-    loadingSpinner.center = CGPointMake(CGRectGetMidX([UIScreen mainScreen].bounds), CGRectGetMidY([UIScreen mainScreen].bounds));
-    loadingSpinner.tintColor = [UIColor blackColor];*/
-    
     self.loadingSpinner.hidesWhenStopped = true;
-    
-    //[loadingSpinner startAnimating];
-    //[self.view addSubview:loadingSpinner];
-    //[self.browserContainerView addSubview:loadingSpinner]; // Now in Storyboard
 
-    //[self.view bringSubviewToFront:loadingSpinner];
-    //ENABLE CURSOR MODE INITIALLY
     self.cursorMode = YES;
     self.cursorView.hidden = NO;
 }
@@ -174,7 +149,7 @@ static UIImage *kPointerCursor() {
 #pragma mark - Font Size
 - (NSUInteger)textFontSize {
     if (_textFontSize == 0) {
-        NSNumber *textFontSizeValue = [[NSUserDefaults standardUserDefaults] objectForKey:@"TextFontSize"];
+        NSNumber *textFontSizeValue = @([[[NSUserDefaults standardUserDefaults] objectForKey:@"TextFontSize"] integerValue]);
         if (textFontSizeValue != nil) {
             // Limit font size
             NSUInteger textFontSize = textFontSizeValue.unsignedIntegerValue;
@@ -194,7 +169,7 @@ static UIImage *kPointerCursor() {
     // Limit font size
     textFontSize = MIN(200, MAX(50, textFontSize));
     _textFontSize = textFontSize;
-    [[NSUserDefaults standardUserDefaults] setObject:@(textFontSize) forKey:@"TextFontSize"];
+    [[NSUserDefaults standardUserDefaults] setObject:[@(textFontSize) stringValue] forKey:@"TextFontSize"];
     [[NSUserDefaults standardUserDefaults] synchronize];
 }
 
@@ -402,8 +377,6 @@ static UIImage *kPointerCursor() {
                                                                                          [favoritesAddToController addAction:saveAction];
                                                                                          [favoritesAddToController addAction:cancelAction];
                                                                                          [self presentViewController:favoritesAddToController animated:YES completion:nil];
-                                                                                         //UITextField *textFieldAlert = favoritesAddToController.textFields[0];
-                                                                                         //[textFieldAlert becomeFirstResponder];
                                                                                          
                                                                                      }];
                                               if (indexableArray != nil) {
@@ -609,24 +582,6 @@ static UIImage *kPointerCursor() {
                                              [self.webview reload];
                                              
                                          }];
-    
-    
-    /*
-     UIAlertAction *reloadAction = [UIAlertAction
-     actionWithTitle:@"Reload Page"
-     style:UIAlertActionStyleDefault
-     handler:^(UIAlertAction *action)
-     {
-     _inputViewVisible = NO;
-     previousURL = @"";
-     [self.webview reload];
-     }];
-     if (self.webview.request != nil) {
-     if (![self.webview.request.URL.absoluteString  isEqual: @""]) {
-     [alertController addAction:reloadAction];
-     }
-     }
-     */
 
     [alertController addAction:viewFavoritesAction];
     [alertController addAction:viewHistoryAction];
@@ -667,7 +622,7 @@ static UIImage *kPointerCursor() {
     }
 }
 
--(void)showInputURLorSearchGoogle
+-(void)showInputURLorSearch
 {
     UIAlertController *alertController2 = [UIAlertController
                                            alertControllerWithTitle:@"Enter URL or Search Terms"
@@ -694,23 +649,7 @@ static UIImage *kPointerCursor() {
                                {
                                    UITextField *urltextfield = alertController2.textFields[0];
                                    NSString *toMod = urltextfield.text;
-                                   /*
-                                    if ([toMod containsString:@" "] || ![temporaryURL containsString:@"."]) {
-                                    toMod = [toMod stringByReplacingOccurrencesOfString:@" " withString:@"+"];
-                                    toMod = [toMod stringByReplacingOccurrencesOfString:@"." withString:@"+"];
-                                    toMod = [toMod stringByReplacingOccurrencesOfString:@"++" withString:@"+"];
-                                    toMod = [toMod stringByReplacingOccurrencesOfString:@"++" withString:@"+"];
-                                    toMod = [toMod stringByReplacingOccurrencesOfString:@"++" withString:@"+"];
-                                    toMod = [toMod stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]];
-                                    if (toMod != nil) {
-                                    [self.webview loadRequest:[NSURLRequest requestWithURL:[NSURL URLWithString:[NSString stringWithFormat:@"https://www.google.com/search?q=%@", toMod]]]];
-                                    }
-                                    else {
-                                    [self requestURLorSearchInput];
-                                    }
-                                    }
-                                    else {
-                                    */
+                                   
                                    if (![toMod isEqualToString:@""]) {
                                        if ([toMod containsString:@"http://"] || [toMod containsString:@"https://"]) {
                                            [self.webview loadRequest:[NSURLRequest requestWithURL:[NSURL URLWithString:[NSString stringWithFormat:@"%@", toMod]]]];
@@ -722,12 +661,11 @@ static UIImage *kPointerCursor() {
                                    else {
                                        [self requestURLorSearchInput];
                                    }
-                                   //}
                                    
                                }];
     
     UIAlertAction *searchAction = [UIAlertAction
-                                   actionWithTitle:@"Search Google"
+                                   actionWithTitle:@"Search"
                                    style:UIAlertActionStyleDefault
                                    handler:^(UIAlertAction *action)
                                    {
@@ -740,7 +678,7 @@ static UIImage *kPointerCursor() {
                                        toMod = [toMod stringByReplacingOccurrencesOfString:@"++" withString:@"+"];
                                        toMod = [toMod stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]];
                                        if (toMod != nil) {
-                                           [self.webview loadRequest:[NSURLRequest requestWithURL:[NSURL URLWithString:[NSString stringWithFormat:@"https://www.google.com/search?q=%@", toMod]]]];
+                                           [self.webview loadRequest:[NSURLRequest requestWithURL:[NSURL URLWithString:[NSString stringWithFormat:[[NSUserDefaults standardUserDefaults] stringForKey:@"searchURL"], toMod]]]];
                                        }
                                        else {
                                            [self requestURLorSearchInput];
@@ -784,13 +722,6 @@ static UIImage *kPointerCursor() {
                                           preferredStyle:UIAlertControllerStyleAlert];
     
     
-    
-    
-    
-    
-    
-    
-    
     UIAlertAction *forwardAction = [UIAlertAction
                                    actionWithTitle:@"Go Forward"
                                    style:UIAlertActionStyleDefault
@@ -816,12 +747,22 @@ static UIImage *kPointerCursor() {
                                    handler:nil];
     
     UIAlertAction *inputAction = [UIAlertAction
-                                  actionWithTitle:@"Input URL or Search with Google"
+                                  actionWithTitle:@"Input URL or Search"
                                   style:UIAlertActionStyleDefault
                                   handler:^(UIAlertAction *action)
                                   {
                                       
-                                      [self showInputURLorSearchGoogle];
+                                      [self showInputURLorSearch];
+                                      
+                                  }];
+    
+    UIAlertAction *menuAction = [UIAlertAction
+                                  actionWithTitle:@"Advanced Menu"
+                                  style:UIAlertActionStyleDefault
+                                  handler:^(UIAlertAction *action)
+                                  {
+                                      
+                                      [self showAdvancedMenu];
                                       
                                   }];
     
@@ -837,6 +778,9 @@ static UIImage *kPointerCursor() {
             [alertController addAction:reloadAction];
         }
     }
+    
+    [alertController addAction:menuAction];
+    
     [alertController addAction:cancelAction];
     
     [self presentViewController:alertController animated:YES completion:nil];
@@ -899,7 +843,7 @@ static UIImage *kPointerCursor() {
                                               preferredStyle:UIAlertControllerStyleAlert];
         
         UIAlertAction *searchAction = [UIAlertAction
-                                       actionWithTitle:@"Google This Page"
+                                       actionWithTitle:@"Search For This Page"
                                        style:UIAlertActionStyleDefault
                                        handler:^(UIAlertAction *action)
                                        {
@@ -914,7 +858,7 @@ static UIImage *kPointerCursor() {
                                                self.requestURL = [self.requestURL stringByReplacingOccurrencesOfString:@"http://" withString:@""];
                                                self.requestURL = [self.requestURL stringByReplacingOccurrencesOfString:@"https://" withString:@""];
                                                self.requestURL = [self.requestURL stringByReplacingOccurrencesOfString:@"www." withString:@""];
-                                               [self.webview loadRequest:[NSURLRequest requestWithURL:[NSURL URLWithString:[NSString stringWithFormat:@"https://www.google.com/search?q=%@", self.requestURL]]]];
+                                               [self.webview loadRequest:[NSURLRequest requestWithURL:[NSURL URLWithString:[NSString stringWithFormat:[[NSUserDefaults standardUserDefaults] stringForKey:@"searchURL"], self.requestURL]]]];
                                            }
                                            
                                        }];
@@ -968,13 +912,13 @@ static UIImage *kPointerCursor() {
     {
         scrollView.scrollEnabled = NO;
         [self.webview setUserInteractionEnabled:NO];
-        self.cursorView.hidden = NO;
+        self.cursorView.image = kDefaultCursor();
     }
     else
     {
         scrollView.scrollEnabled = YES;
         [self.webview setUserInteractionEnabled:YES];
-        self.cursorView.hidden = YES;
+        self.cursorView.image = kScrollerCursor();
         
         
     }
@@ -1021,45 +965,7 @@ static UIImage *kPointerCursor() {
 }
 - (void)alertTextFieldShouldReturn:(UITextField *)sender
 {
-    /*
-     _inputViewVisible = NO;
-     UIAlertController *alertController = (UIAlertController *)self.presentedViewController;
-     if (alertController)
-     {
-     [alertController dismissViewControllerAnimated:true completion:nil];
-     if ([temporaryURL containsString:@" "] || ![temporaryURL containsString:@"."]) {
-     temporaryURL = [temporaryURL stringByReplacingOccurrencesOfString:@" " withString:@"+"];
-     temporaryURL = [temporaryURL stringByReplacingOccurrencesOfString:@"." withString:@"+"];
-     temporaryURL = [temporaryURL stringByReplacingOccurrencesOfString:@"++" withString:@"+"];
-     temporaryURL = [temporaryURL stringByReplacingOccurrencesOfString:@"++" withString:@"+"];
-     temporaryURL = [temporaryURL stringByReplacingOccurrencesOfString:@"++" withString:@"+"];
-     temporaryURL = [temporaryURL stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]];
-     if (temporaryURL != nil) {
-     [self.webview loadRequest:[NSURLRequest requestWithURL:[NSURL URLWithString:[NSString stringWithFormat:@"https://www.google.com/search?q=%@", temporaryURL]]]];
-     }
-     else {
-     [self requestURLorSearchInput];
-     }
-     temporaryURL = nil;
-     }
-     else {
-     if (temporaryURL != nil) {
-     if ([temporaryURL containsString:@"http://"] || [temporaryURL containsString:@"https://"]) {
-     [self.webview loadRequest:[NSURLRequest requestWithURL:[NSURL URLWithString:[NSString stringWithFormat:@"%@", temporaryURL]]]];
-     temporaryURL = nil;
-     }
-     else {
-     [self.webview loadRequest:[NSURLRequest requestWithURL:[NSURL URLWithString:[NSString stringWithFormat:@"http://%@", temporaryURL]]]];
-     temporaryURL = nil;
-     }
-     }
-     else {
-     [self requestURLorSearchInput];
-     }
-     }
-     
-     }
-     */
+    
 }
 #pragma mark - Remote Button
 -(void)pressesEnded:(NSSet<UIPress *> *)presses withEvent:(UIPressesEvent *)event
@@ -1085,17 +991,10 @@ static UIImage *kPointerCursor() {
             [alert addAction:[UIAlertAction actionWithTitle:@"Dismiss" style:UIAlertActionStyleCancel handler:nil]];
             [self presentViewController:alert animated:YES completion:nil];
         }
-        /*
-        else {
-            [self requestURLorSearchInput];
-        }*/
         
     }
     else if (presses.anyObject.type == UIPressTypeUpArrow)
     {
-        // Zoom testing (needs work) (requires old remote for up arrow)
-        //UIScrollView * sv = self.webview.scrollView;
-        //[sv setZoomScale:30];
     }
     else if (presses.anyObject.type == UIPressTypeDownArrow)
     {
@@ -1143,7 +1042,7 @@ static UIImage *kPointerCursor() {
                 }
                 else if(CGRectContainsPoint(self.lblUrlBar.frame, point))
                 {
-                    [self showInputURLorSearchGoogle];
+                    [self showInputURLorSearch];
                 }
 
                 
@@ -1184,23 +1083,7 @@ static UIImage *kPointerCursor() {
             [self.webview stringByEvaluatingJavaScriptFromString:[NSString stringWithFormat:@"document.elementFromPoint(%i, %i).click()", (int)point.x, (int)point.y]];
             // Make the UIWebView method call
             NSString *fieldType = [self.webview stringByEvaluatingJavaScriptFromString:[NSString stringWithFormat:@"document.elementFromPoint(%i, %i).type;", (int)point.x, (int)point.y]];
-            /*
-             if (fieldType == nil) {
-             NSString *contentEditible = [self.webview stringByEvaluatingJavaScriptFromString:[NSString stringWithFormat:@"document.elementFromPoint(%i, %i).getAttribute('contenteditable');", (int)point.x, (int)point.y]];
-             NSLog(contentEditible);
-             if ([contentEditible isEqualToString:@"true"]) {
-             fieldType = @"text";
-             }
-             }
-             else if ([[fieldType stringByReplacingOccurrencesOfString:@" " withString:@""] isEqualToString: @""]) {
-             NSString *contentEditible = [self.webview stringByEvaluatingJavaScriptFromString:[NSString stringWithFormat:@"document.elementFromPoint(%i, %i).getAttribute('contenteditable');", (int)point.x, (int)point.y]];
-             NSLog(contentEditible);
-             if ([contentEditible isEqualToString:@"true"]) {
-             fieldType = @"text";
-             }
-             }
-             NSLog(fieldType);
-             */
+            
             fieldType = fieldType.lowercaseString;
             if ([fieldType isEqualToString:@"date"] || [fieldType isEqualToString:@"datetime"] || [fieldType isEqualToString:@"datetime-local"] || [fieldType isEqualToString:@"email"] || [fieldType isEqualToString:@"month"] || [fieldType isEqualToString:@"number"] || [fieldType isEqualToString:@"password"] || [fieldType isEqualToString:@"search"] || [fieldType isEqualToString:@"tel"] || [fieldType isEqualToString:@"text"] || [fieldType isEqualToString:@"time"] || [fieldType isEqualToString:@"url"] || [fieldType isEqualToString:@"week"]) {
                 NSString *fieldTitle = [self.webview stringByEvaluatingJavaScriptFromString:[NSString stringWithFormat:@"document.elementFromPoint(%i, %i).title;", (int)point.x, (int)point.y]];
@@ -1291,9 +1174,8 @@ static UIImage *kPointerCursor() {
                 }
             }
             else {
-                //[self.webview stringByEvaluatingJavaScriptFromString:[NSString stringWithFormat:@"document.elementFromPoint(%i, %i).click()", (int)point.x, (int)point.y]];
+                
             }
-            //[self toggleMode];
                 
             }
         }
